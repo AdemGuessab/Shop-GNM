@@ -1,11 +1,14 @@
 <?php
 session_start();
 
+// الإداري الثابت
 $admin_user = "admin";
 $admin_pass = "gnm123";
 
-// تحميل المستخدمين
+// تحميل المستخدمين المسجلين
 $users = file_exists("users.json") ? json_decode(file_get_contents("users.json"), true) : [];
+
+$redirect = isset($_GET["redirect"]) ? $_GET["redirect"] : "user_dashboard.php";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
   $username = $_POST["username"];
@@ -21,7 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       if ($u["username"] === $username && $u["password"] === $password) {
         $_SESSION["role"] = "user";
         $_SESSION["user"] = $username;
-        header("Location: user_dashboard.php");
+        header("Location: " . htmlspecialchars($redirect));
         exit;
       }
     }
