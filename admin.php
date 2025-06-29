@@ -7,22 +7,48 @@ if (!isset($_SESSION["role"]) || $_SESSION["role"] !== "admin") {
     exit;
 }
 
-$productsFile = __DIR__ . "/products.json";
-$uploadDir = __DIR__ . "/uploads/";
+$productsFile = sys_get_temp_dir() . "/products.json"; // للعمل على Render
+$uploadDir = sys_get_temp_dir() . "/uploads/";
 
 if (!file_exists($uploadDir)) {
     mkdir($uploadDir, 0775, true);
 }
 
-// تحميل المنتجات من الملف JSON
 $products = file_exists($productsFile) ? json_decode(file_get_contents($productsFile), true) : [];
+if (!is_array($products)) $products = [];
 
-if (!is_array($products)) {
-    $products = [];
+// حذف منتج
+if (isset($_GET['delete'])) {
+    $deleteId = intval($_GET['delete']);
+    foreach ($products as $i => $p) {
+        if ($p['id'] === $deleteId) {
+            if (!empty($p['image']) && file_exists($uploadDir . $p['image'])) {
+                unlink($uploadDir . $p['image']);
+            }
+            unset($products[$i]);
+            break;
+        }
+    }
+    $products = array_values($products);
+    file_put_contents($productsFile, json_encode($products, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    header("Location: admin.php");
+    exit;
 }
+
+// فلترة
+$filter = isset($_GET['filter']) ? trim($_GET['filter']) : '';
+$filteredProducts = array_filter($products, function($p) use ($filter) {
+    return $filter === '' || stripos($p['name'], $filter) !== false;
+});
 
 // إضافة منتج جديد
 if (isset($_POST['action']) && $_POST['action'] === 'add') {
+    foreach ($products as $p) {
+        if ($p['name'] === $_POST['name'] || $p['download'] === $_POST['download']) {
+            die("اسم المنتج أو رابط التحميل موجود مسبقًا.");
+        }
+    }
+
     $newId = count($products) ? max(array_column($products, 'id')) + 1 : 1;
     $imageName = '';
 
@@ -37,7 +63,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'add') {
         $imageName = $safeName;
     }
 
-    $newProduct = [
+    $products[] = [
         "id" => $newId,
         "name" => $_POST["name"],
         "description" => [
@@ -50,12 +76,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'add') {
         "image" => $imageName
     ];
 
-    $products[] = $newProduct;
-
-    if (file_put_contents($productsFile, json_encode($products, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) === false) {
-        die("فشل في حفظ بيانات المنتجات. تحقق من صلاحيات الملف.");
-    }
-
+    file_put_contents($productsFile, json_encode($products, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     header("Location: admin.php");
     exit;
 }
@@ -79,23 +100,18 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit') {
                 if (!move_uploaded_file($_FILES['image']['tmp_name'], $targetPath)) {
                     die("خطأ أثناء رفع الصورة الجديدة.");
                 }
-
                 $product['image'] = $safeName;
             }
             break;
         }
     }
-    unset($product); // تحرير المرجع
+    unset($product);
 
-    if (file_put_contents($productsFile, json_encode($products, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) === false) {
-        die("فشل في حفظ بيانات المنتجات بعد التعديل. تحقق من صلاحيات الملف.");
-    }
-
+    file_put_contents($productsFile, json_encode($products, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     header("Location: admin.php");
     exit;
 }
 
-// لتحرير منتج معين (عرض بياناته في النموذج)
 $editProduct = null;
 if (isset($_GET['edit'])) {
     $editId = intval($_GET['edit']);
@@ -123,12 +139,19 @@ ob_end_flush();
   form { background: #f9f9f9; padding: 15px; border-radius: 8px; max-width: 600px; margin: auto; }
   input, textarea { width: 100%; margin-bottom: 10px; padding: 6px; }
   button { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
-  a.button-edit { padding: 6px 10px; background: #007bff; color: white; border-radius: 4px; text-decoration: none; }
+  a.button-edit, a.button-delete { padding: 6px 10px; color: white; border-radius: 4px; text-decoration: none; }
+  a.button-edit { background: #007bff; }
+  a.button-delete { background: #dc3545; }
 </style>
 </head>
 <body>
 
 <h1>لوحة الإدارة - إدارة المنتجات</h1>
+
+<form method="GET" style="margin-bottom: 20px; text-align: center;">
+  <input type="text" name="filter" placeholder="🔍 ابحث باسم المنتج" value="<?= htmlspecialchars($filter) ?>" style="width: 300px; padding: 8px;" />
+  <button type="submit">بحث</button>
+</form>
 
 <table>
   <thead>
@@ -139,10 +162,11 @@ ob_end_flush();
       <th>السعر (USD)</th>
       <th>رابط التنزيل</th>
       <th>تعديل</th>
+      <th>حذف</th>
     </tr>
   </thead>
   <tbody>
-    <?php foreach ($products as $p): ?>
+    <?php foreach ($filteredProducts as $p): ?>
       <tr>
         <td><?= $p['id'] ?></td>
         <td>
@@ -156,6 +180,7 @@ ob_end_flush();
         <td><?= htmlspecialchars($p['price']) ?></td>
         <td><a href="<?= htmlspecialchars($p['download']) ?>" target="_blank">تحميل</a></td>
         <td><a href="?edit=<?= $p['id'] ?>" class="button-edit">تعديل</a></td>
+        <td><a href="?delete=<?= $p['id'] ?>" class="button-delete" onclick="return confirm('هل أنت متأكد أنك تريد حذف هذا المنتج؟');">🗑 حذف</a></td>
       </tr>
     <?php endforeach; ?>
   </tbody>
