@@ -1,14 +1,26 @@
 [
   {
     "id": 1,
-    "name": "VPN Premium",
+    "name": "منتج تجريبي 1",
     "description": {
-      "en": "Access the internet securely with high-speed VPN services.",
-      "fr": "Accédez à Internet de manière sécurisée avec un VPN rapide.",
-      "ar": "تصفح الإنترنت بأمان وبسرعة باستخدام خدمة VPN عالية الجودة."
+      "en": "Sample product description in English.",
+      "fr": "Description du produit exemple en français.",
+      "ar": "وصف المنتج التجريبي بالعربية."
     },
-    "price": "5.00",
-    "download": "https://example.com/vpn-premium.zip",
-    "image": "vpn.png"
+    "price": "10.99",
+    "download": "https://example.com/download/product1.zip",
+    "image": "sample1.jpg"
+  },
+  {
+    "id": 2,
+    "name": "منتج تجريبي 2",
+    "description": {
+      "en": "Second sample product description.",
+      "fr": "Deuxième description du produit exemple.",
+      "ar": "الوصف الثاني للمنتج التجريبي."
+    },
+    "price": "15.49",
+    "download": "https://example.com/download/product2.zip",
+    "image": "sample2.png"
   }
 ]

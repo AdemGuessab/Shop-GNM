@@ -1,18 +1,25 @@
 <?php
 session_start();
+ob_start();
+
 if (!isset($_SESSION["role"]) || $_SESSION["role"] !== "admin") {
-  header("Location: auth.php");
-  exit;
+    header("Location: auth.php");
+    exit;
 }
 
-$productsFile = "products.json";
-$uploadDir = "uploads/";
+$productsFile = __DIR__ . "/products.json";
+$uploadDir = __DIR__ . "/uploads/";
 
 if (!file_exists($uploadDir)) {
-    mkdir($uploadDir, 0777, true);
+    mkdir($uploadDir, 0775, true);
 }
 
+// تحميل المنتجات من الملف JSON
 $products = file_exists($productsFile) ? json_decode(file_get_contents($productsFile), true) : [];
+
+if (!is_array($products)) {
+    $products = [];
+}
 
 // إضافة منتج جديد
 if (isset($_POST['action']) && $_POST['action'] === 'add') {
@@ -20,8 +27,14 @@ if (isset($_POST['action']) && $_POST['action'] === 'add') {
     $imageName = '';
 
     if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-        $imageName = time() . '_' . basename($_FILES['image']['name']);
-        move_uploaded_file($_FILES['image']['tmp_name'], $uploadDir . $imageName);
+        $safeName = time() . '_' . basename($_FILES['image']['name']);
+        $targetPath = $uploadDir . $safeName;
+
+        if (!move_uploaded_file($_FILES['image']['tmp_name'], $targetPath)) {
+            die("خطأ أثناء رفع الصورة.");
+        }
+
+        $imageName = $safeName;
     }
 
     $newProduct = [
@@ -36,8 +49,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'add') {
         "download" => $_POST["download"],
         "image" => $imageName
     ];
+
     $products[] = $newProduct;
-    file_put_contents($productsFile, json_encode($products, JSON_PRETTY_PRINT));
+
+    if (file_put_contents($productsFile, json_encode($products, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) === false) {
+        die("فشل في حفظ بيانات المنتجات. تحقق من صلاحيات الملف.");
+    }
+
     header("Location: admin.php");
     exit;
 }
@@ -54,16 +72,25 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit') {
             $product['price'] = $_POST["price"];
             $product['download'] = $_POST["download"];
 
-            // رفع صورة جديدة إذا تم تحميلها
             if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-                $imageName = time() . '_' . basename($_FILES['image']['name']);
-                move_uploaded_file($_FILES['image']['tmp_name'], $uploadDir . $imageName);
-                $product['image'] = $imageName;
+                $safeName = time() . '_' . basename($_FILES['image']['name']);
+                $targetPath = $uploadDir . $safeName;
+
+                if (!move_uploaded_file($_FILES['image']['tmp_name'], $targetPath)) {
+                    die("خطأ أثناء رفع الصورة الجديدة.");
+                }
+
+                $product['image'] = $safeName;
             }
             break;
         }
     }
-    file_put_contents($productsFile, json_encode($products, JSON_PRETTY_PRINT));
+    unset($product); // تحرير المرجع
+
+    if (file_put_contents($productsFile, json_encode($products, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) === false) {
+        die("فشل في حفظ بيانات المنتجات بعد التعديل. تحقق من صلاحيات الملف.");
+    }
+
     header("Location: admin.php");
     exit;
 }
@@ -79,6 +106,8 @@ if (isset($_GET['edit'])) {
         }
     }
 }
+
+ob_end_flush();
 ?>
 
 <!DOCTYPE html>
@@ -117,8 +146,8 @@ if (isset($_GET['edit'])) {
       <tr>
         <td><?= $p['id'] ?></td>
         <td>
-          <?php if ($p['image']): ?>
-            <img src="<?= $uploadDir . htmlspecialchars($p['image']) ?>" alt="صورة المنتج" />
+          <?php if (!empty($p['image'])): ?>
+            <img src="uploads/<?= htmlspecialchars($p['image']) ?>" alt="صورة المنتج" />
           <?php else: ?>
             لا توجد صورة
           <?php endif; ?>
@@ -161,9 +190,9 @@ if (isset($_GET['edit'])) {
   <label>صورة المنتج (رفع جديد):</label>
   <input type="file" name="image" accept="image/*" />
 
-  <?php if ($editProduct && $editProduct['image']): ?>
+  <?php if ($editProduct && !empty($editProduct['image'])): ?>
     <p>الصورة الحالية:</p>
-    <img src="<?= $uploadDir . htmlspecialchars($editProduct['image']) ?>" alt="الصورة الحالية" style="max-width:150px;" />
+    <img src="uploads/<?= htmlspecialchars($editProduct['image']) ?>" alt="الصورة الحالية" style="max-width:150px;" />
   <?php endif; ?>
 
   <button type="submit"><?= $editProduct ? "حفظ التعديلات" : "إضافة المنتج" ?></button>
