@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION["role"]) || $_SESSION["role"] !== "user") {
-  header("Location: login.html?redirect=buy.php?id=" . $_GET['id']);
+  header("Location: auth.php?redirect=buy.php?id=" . $_GET['id']);
   exit;
 }
 
@@ -30,8 +30,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 }
 ?>
 
-<h2>🛒 Confirm Purchase: <?= $product["name"] ?></h2>
-<p>Price: <?= $product["price"] ?> USD</p>
+<h2>🛒 Confirm Purchase: <?= htmlspecialchars($product["name"]) ?></h2>
+<p>Price: <?= htmlspecialchars($product["price"]) ?> USD</p>
 <form method="POST">
   <button type="submit">✅ Confirm Payment</button>
 </form>

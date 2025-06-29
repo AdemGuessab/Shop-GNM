@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION["role"]) || $_SESSION["role"] !== "user") {
-  header("Location: login.html");
+  header("Location: auth.php");
   exit;
 }
 
@@ -15,9 +15,9 @@ echo "<h1>📦 My Products</h1>";
 foreach ($products as $p) {
   if (in_array($p['id'], $user_products)) {
     echo "<div style='border:1px solid #ccc; padding:15px; margin-bottom:10px'>";
-    echo "<h3>{$p['name']}</h3>";
-    echo "<p>{$p['description']['en']}</p>";
-    echo "<a href='{$p['download']}' target='_blank'>⬇️ Download</a>";
+    echo "<h3>" . htmlspecialchars($p['name']) . "</h3>";
+    echo "<p>" . htmlspecialchars($p['description']['en']) . "</p>";
+    echo "<a href='" . htmlspecialchars($p['download']) . "' target='_blank'>⬇️ Download</a>";
     echo "</div>";
   }
 }
