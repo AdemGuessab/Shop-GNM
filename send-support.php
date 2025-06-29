@@ -1,0 +1,1 @@
+<?php // PHP to receive support messages ?>

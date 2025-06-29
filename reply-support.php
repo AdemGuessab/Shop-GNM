@@ -1,0 +1,1 @@
+<?php // PHP to send replies via email after translation ?>
