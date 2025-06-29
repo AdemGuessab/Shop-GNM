@@ -2,6 +2,16 @@
 session_start();
 ob_start();
 
+// إظهار الأخطاء فقط إذا كان المستخدم Admin
+if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+} else {
+    ini_set('display_errors', 0);
+    error_reporting(0);
+}
+
 if (!isset($_SESSION["role"]) || $_SESSION["role"] !== "admin") {
     header("Location: auth.php");
     exit;
@@ -73,7 +83,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'add') {
         ],
         "price" => $_POST["price"],
         "download" => $_POST["download"],
-        "image" => $imageName
+        "image" => $imageName,
+        "published" => true
     ];
 
     file_put_contents($productsFile, json_encode($products, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
@@ -125,103 +136,3 @@ if (isset($_GET['edit'])) {
 
 ob_end_flush();
 ?>
-
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8" />
-<title>لوحة الإدارة - CyberGNM</title>
-<style>
-  body { font-family: sans-serif; margin: 40px; direction: rtl; }
-  table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-  img { max-width: 80px; max-height: 50px; }
-  form { background: #f9f9f9; padding: 15px; border-radius: 8px; max-width: 600px; margin: auto; }
-  input, textarea { width: 100%; margin-bottom: 10px; padding: 6px; }
-  button { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
-  a.button-edit, a.button-delete { padding: 6px 10px; color: white; border-radius: 4px; text-decoration: none; }
-  a.button-edit { background: #007bff; }
-  a.button-delete { background: #dc3545; }
-</style>
-</head>
-<body>
-
-<h1>لوحة الإدارة - إدارة المنتجات</h1>
-
-<form method="GET" style="margin-bottom: 20px; text-align: center;">
-  <input type="text" name="filter" placeholder="🔍 ابحث باسم المنتج" value="<?= htmlspecialchars($filter) ?>" style="width: 300px; padding: 8px;" />
-  <button type="submit">بحث</button>
-</form>
-
-<table>
-  <thead>
-    <tr>
-      <th>المعرف</th>
-      <th>الصورة</th>
-      <th>الاسم</th>
-      <th>السعر (USD)</th>
-      <th>رابط التنزيل</th>
-      <th>تعديل</th>
-      <th>حذف</th>
-    </tr>
-  </thead>
-  <tbody>
-    <?php foreach ($filteredProducts as $p): ?>
-      <tr>
-        <td><?= $p['id'] ?></td>
-        <td>
-          <?php if (!empty($p['image'])): ?>
-            <img src="uploads/<?= htmlspecialchars($p['image']) ?>" alt="صورة المنتج" />
-          <?php else: ?>
-            لا توجد صورة
-          <?php endif; ?>
-        </td>
-        <td><?= htmlspecialchars($p['name']) ?></td>
-        <td><?= htmlspecialchars($p['price']) ?></td>
-        <td><a href="<?= htmlspecialchars($p['download']) ?>" target="_blank">تحميل</a></td>
-        <td><a href="?edit=<?= $p['id'] ?>" class="button-edit">تعديل</a></td>
-        <td><a href="?delete=<?= $p['id'] ?>" class="button-delete" onclick="return confirm('هل أنت متأكد أنك تريد حذف هذا المنتج؟');">🗑 حذف</a></td>
-      </tr>
-    <?php endforeach; ?>
-  </tbody>
-</table>
-
-<h2><?= $editProduct ? "تعديل المنتج #" . $editProduct['id'] : "إضافة منتج جديد" ?></h2>
-
-<form method="POST" enctype="multipart/form-data">
-  <input type="hidden" name="action" value="<?= $editProduct ? 'edit' : 'add' ?>" />
-  <?php if ($editProduct): ?>
-    <input type="hidden" name="id" value="<?= $editProduct['id'] ?>" />
-  <?php endif; ?>
-
-  <label>اسم المنتج:</label>
-  <input type="text" name="name" required value="<?= $editProduct ? htmlspecialchars($editProduct['name']) : '' ?>" />
-
-  <label>السعر (USD):</label>
-  <input type="text" name="price" required value="<?= $editProduct ? htmlspecialchars($editProduct['price']) : '' ?>" />
-
-  <label>رابط التنزيل:</label>
-  <input type="text" name="download" required value="<?= $editProduct ? htmlspecialchars($editProduct['download']) : '' ?>" />
-
-  <label>الوصف (إنجليزي):</label>
-  <textarea name="desc_en"><?= $editProduct ? htmlspecialchars($editProduct['description']['en']) : '' ?></textarea>
-
-  <label>الوصف (فرنسي):</label>
-  <textarea name="desc_fr"><?= $editProduct ? htmlspecialchars($editProduct['description']['fr']) : '' ?></textarea>
-
-  <label>الوصف (عربي):</label>
-  <textarea name="desc_ar"><?= $editProduct ? htmlspecialchars($editProduct['description']['ar']) : '' ?></textarea>
-
-  <label>صورة المنتج (رفع جديد):</label>
-  <input type="file" name="image" accept="image/*" />
-
-  <?php if ($editProduct && !empty($editProduct['image'])): ?>
-    <p>الصورة الحالية:</p>
-    <img src="uploads/<?= htmlspecialchars($editProduct['image']) ?>" alt="الصورة الحالية" style="max-width:150px;" />
-  <?php endif; ?>
-
-  <button type="submit"><?= $editProduct ? "حفظ التعديلات" : "إضافة المنتج" ?></button>
-</form>
-
-</body>
-</html>

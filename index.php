@@ -1,76 +1,45 @@
 <?php
 session_start();
 
-$langs = ['en' => 'English', 'fr' => 'Français', 'ar' => 'العربية'];
-$lang = $_GET['lang'] ?? $_SESSION['lang'] ?? 'en';
-if (!in_array($lang, array_keys($langs))) $lang = 'en';
-$_SESSION['lang'] = $lang;
+$productsFile = sys_get_temp_dir() . "/products.json";
+$uploadDir = sys_get_temp_dir() . "/uploads/";
 
-$products = json_decode(file_get_contents("products.json"), true);
+$products = file_exists($productsFile) ? json_decode(file_get_contents($productsFile), true) : [];
+if (!is_array($products)) $products = [];
 
-$username = $_SESSION['user'] ?? null;
-$role = $_SESSION['role'] ?? null;
-
-function buy_text($lang) {
-    return match ($lang) {
-        'fr' => "Acheter maintenant",
-        'ar' => "اشترِ الآن",
-        default => "Buy Now",
-    };
-}
+$publicProducts = array_filter($products, fn($p) => !empty($p['published']));
 ?>
+
 <!DOCTYPE html>
-<html lang="<?= htmlspecialchars($lang) ?>" <?= $lang === 'ar' ? 'dir="rtl"' : '' ?>>
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <title>CyberGNM Store</title>
+  <meta charset="UTF-8">
+  <title>منتجات CyberGNM</title>
   <style>
-    body { font-family: sans-serif; margin: 40px; background: #f8f8f8; <?= $lang === 'ar' ? 'text-align: right;' : '' ?> }
-    .topnav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .nav-links a { margin: 0 10px; text-decoration: none; color: #333; font-weight: bold; }
-    .product { background: #fff; border: 1px solid #ccc; padding: 20px; margin-bottom: 15px; border-radius: 8px; }
-    a.button { background: #28a745; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px; }
+    body { font-family: sans-serif; direction: rtl; margin: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+    .card { border: 1px solid #ccc; padding: 10px; border-radius: 8px; background: #f9f9f9; }
+    img { width: 100%; height: auto; max-height: 160px; object-fit: cover; }
+    h3 { margin: 10px 0 5px; }
+    .price { color: green; font-weight: bold; }
   </style>
 </head>
 <body>
 
-<div class="topnav">
-  <div class="nav-links">
-    <a href="my-products.php"><?= $lang === 'ar' ? '📦 مشترياتي' : ($lang === 'fr' ? '📦 Mes Achats' : '📦 My Products') ?></a>
-    <?php if ($role === 'admin'): ?>
-      <a href="admin.php"><?= $lang === 'ar' ? '⚙️ لوحة الإدارة' : ($lang === 'fr' ? '⚙️ Admin Panel' : '⚙️ Admin Panel') ?></a>
-    <?php endif; ?>
-    <?php if ($username): ?>
-      <a href="auth.php?logout=1"><?= $lang === 'ar' ? 'تسجيل خروج' : ($lang === 'fr' ? 'Déconnexion' : 'Logout') ?></a>
-    <?php else: ?>
-      <a href="auth.php"><?= $lang === 'ar' ? 'تسجيل الدخول / التسجيل' : ($lang === 'fr' ? 'Connexion / Inscription' : 'Login / Register') ?></a>
-    <?php endif; ?>
-  </div>
-  <div class="lang-switch">
-    🌐 
-    <?php foreach ($langs as $code => $label): ?>
-      <?php if ($code === $lang): ?>
-        <strong><?= $label ?></strong>
-      <?php else: ?>
-        <a href="?lang=<?= $code ?>"><?= $label ?></a>
+<h1>المنتجات المتاحة</h1>
+
+<div class="grid">
+  <?php foreach ($publicProducts as $product): ?>
+    <div class="card">
+      <?php if (!empty($product['image'])): ?>
+        <img src="data:image/jpeg;base64,<?= base64_encode(file_get_contents($uploadDir . $product['image'])) ?>" alt="">
       <?php endif; ?>
-      <?php if (next($langs)) echo " | "; ?>
-    <?php endforeach; ?>
-  </div>
+      <h3><?= htmlspecialchars($product['name']) ?></h3>
+      <p class="price">$<?= htmlspecialchars($product['price']) ?></p>
+      <a href="<?= htmlspecialchars($product['download']) ?>" target="_blank">تحميل</a>
+    </div>
+  <?php endforeach; ?>
 </div>
-
-<h1>🛍️ CyberGNM Products</h1>
-
-<?php foreach ($products as $product): ?>
-  <div class="product">
-    <h2><?= htmlspecialchars($product['name']) ?></h2>
-    <p><?= htmlspecialchars($product['description'][$lang]) ?></p>
-    <p><strong>Price:</strong> <?= htmlspecialchars($product['price']) ?> USD</p>
-    <a class="button" href="buy.php?id=<?= htmlspecialchars($product['id']) ?>">
-      💳 <?= buy_text($lang) ?>
-    </a>
-  </div>
-<?php endforeach; ?>
 
 </body>
 </html>
