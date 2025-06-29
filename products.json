@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "name": "Keylogger PRO",
+    "description": "Advanced keylogger tool.",
+    "price": "15$",
+    "download": "https://example.com/downloads/keylogger.zip"
+  },
+  {
+    "name": "VPN Cracker",
+    "description": "Tool for cracking VPN accounts.",
+    "price": "25$",
+    "download": "https://example.com/downloads/vpncracker.zip"
+  }
+]

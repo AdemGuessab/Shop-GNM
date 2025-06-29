@@ -1,26 +1,21 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Contact Support - CyberGNM</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
-    form { background: white; padding: 20px; max-width: 500px; margin: auto; border-radius: 8px; box-shadow: 0 0 10px #ccc; }
-    input, textarea, select, button { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc; }
-    button { background: #28a745; color: white; border: none; }
-  </style>
+  <title>Contact Support</title>
 </head>
 <body>
-  <form method="POST" action="send_support.php">
-    <h2>📩 Contact Support</h2>
-    <input type="text" name="name" placeholder="Your Name" required>
-    <input type="email" name="email" placeholder="Your Email" required>
-    <textarea name="message" placeholder="Write your message..." required></textarea>
-    <select name="lang" required>
+  <h2>📩 Contact Support</h2>
+  <form method="POST" action="support.php">
+    <input name="name" placeholder="Your Name" required><br>
+    <input name="email" type="email" placeholder="Your Email" required><br>
+    <select name="lang">
       <option value="en">English</option>
-      <option value="ar">العربية</option>
+      <option value="ar">Arabic</option>
       <option value="fr">Français</option>
-    </select>
+    </select><br>
+    <textarea name="message" placeholder="Your message..." required></textarea><br>
     <button type="submit">Send</button>
   </form>
 </body>
